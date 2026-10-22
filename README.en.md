@@ -29,7 +29,7 @@ a serial debugging tool.
 
 ### 1. Get the app
 
-Download a release build, or build from source (see below). On Windows, run `wild-ide.exe`.
+Download a [release build](https://gitee.com/fablabswjtu/wildcode/releases), or build from source (see below). On Windows, run `wild-ide.exe`.
 
 ### 2. First-time setup (once)
 

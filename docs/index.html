@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wild IDE · 野IDE — 极简 Arduino / ESP32 IDE</title>
+  <meta name="description" content="Wild IDE 是一个用 Rust 写的极简 Arduino / ESP32 IDE。没有项目树、插件市场或 AI，打开、写代码、编译上传。">
+  <meta name="theme-color" content="#0b0d0f">
+  <meta property="og:title" content="Wild IDE · 野IDE">
+  <meta property="og:description" content="一个用 Rust 写的极简 Arduino / ESP32 IDE。没有项目树、插件市场或 AI。">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <script>document.documentElement.classList.add('js');</script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main" data-i18n="skip">跳到主要内容</a>
+
+  <header class="site-header">
+    <div class="page-shell header-inner">
+      <a class="brand" href="#main" aria-label="Wild IDE">
+        <img class="brand-mark" src="assets/favicon.svg" width="30" height="30" alt="">
+        <span class="brand-text">Wild IDE <span class="brand-cn">野IDE</span></span>
+      </a>
+
+      <nav class="site-nav" aria-label="Primary">
+        <a href="#features"><span data-i18n="nav.features">功能</span></a>
+        <a href="#start"><span data-i18n="nav.start">开始</span></a>
+        <a href="#philosophy"><span data-i18n="nav.philosophy">理念</span></a>
+        <a href="#history"><span data-i18n="nav.history">历史</span></a>
+        <a class="nav-download" href="#download"><span data-i18n="nav.download">下载</span></a>
+      </nav>
+
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button class="lang-button is-active" type="button" data-lang="zh" aria-pressed="true" title="中文">中</button>
+        <button class="lang-button" type="button" data-lang="en" aria-pressed="false" title="English">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero page-shell" aria-labelledby="hero-title">
+      <div class="hero-copy" data-reveal>
+        <p class="eyebrow"><span class="eyebrow-dot"></span><span data-i18n="hero.eyebrow">0.1.0 早期测试版 · Windows x64</span></p>
+        <h1 id="hero-title" data-i18n-html="hero.title">把 Arduino 写代码，<br><span class="accent">做得更简单。</span></h1>
+        <p class="lede" data-i18n="hero.lede">一个用 Rust 写的极简 Arduino / ESP32 IDE。没有项目树、没有插件市场、没有 AI——打开软件、打开串口、写代码、编译上传。</p>
+
+        <div class="hero-actions">
+          <a class="button button-primary" href="https://gitee.com/fablabswjtu/wildcode/releases" target="_blank" rel="noopener">
+            <span data-i18n="hero.download">下载 Windows 测试版</span>
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M8 2v8m0 0 3-3m-3 3L5 7M3 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a class="button button-ghost" href="#start"><span data-i18n="hero.start">看看怎么用</span></a>
+        </div>
+
+        <ul class="hero-meta">
+          <li data-i18n="hero.meta1">Windows 10 / 11 · 64 位</li>
+          <li data-i18n="hero.meta2">免安装 · 约 2.7 MB</li>
+          <li data-i18n="hero.meta3">MIT License</li>
+        </ul>
+      </div>
+
+      <div class="hero-visual" data-reveal>
+        <div class="mockup-wrap">
+          <div class="mockup">
+            <div class="mockup-titlebar">
+              <span class="traffic-lights" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span class="mockup-title">Wild IDE <span>· 野IDE</span></span>
+              <span class="mockup-version">v0.1.0</span>
+            </div>
+
+            <div class="mockup-toolbar">
+              <span class="mock-pill">ESP32 Dev Module</span>
+              <span class="mock-pill">COM6</span>
+              <span class="mock-tool mock-open"><span data-i18n="mock.open">打开串口</span></span>
+              <span class="mock-tool mock-tool-accent"><span data-i18n="mock.upload">上传</span></span>
+            </div>
+
+            <div class="mockup-editor">
+              <div class="mockup-gutter" aria-hidden="true">
+                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span>
+              </div>
+              <pre class="mockup-code"><code><span class="tok-pre">#include</span> <span class="tok-str">&lt;Arduino.h&gt;</span>
+
+<span class="tok-key">const int</span> led = <span class="tok-num">2</span>;
+
+<span class="tok-type">void</span> <span class="tok-fn">setup</span>() {
+  Serial.<span class="tok-fn">begin</span>(<span class="tok-num">115200</span>);
+  <span class="tok-fn">pinMode</span>(led, OUTPUT);
+}
+
+<span class="tok-type">void</span> <span class="tok-fn">loop</span>() {
+  <span class="tok-fn">digitalWrite</span>(led, HIGH);
+  <span class="tok-fn">delay</span>(<span class="tok-num">500</span>);
+  <span class="tok-fn">digitalWrite</span>(led, LOW);
+  <span class="tok-fn">delay</span>(<span class="tok-num">500</span>);
+}</code></pre>
+            </div>
+
+            <div class="mockup-console">
+              <div class="mockup-console-head">
+                <span class="mock-tab is-active"><span data-i18n="mock.output">编译输出</span></span>
+                <span class="mock-tab"><span data-i18n="mock.serial">串口监视器</span></span>
+                <span class="mock-console-actions" data-i18n="mock.clear">清空</span>
+              </div>
+              <div class="mockup-log">
+                <div><span class="log-muted">$</span> arduino-cli compile --fqbn esp32:esp32:esp32</div>
+                <div><span class="log-accent">✓</span> Sketch uses 265721 bytes (20%)</div>
+                <div><span class="log-accent">✓</span> Upload complete.</div>
+                <div><span class="log-muted">Ready for next task.</span></div>
+              </div>
+            </div>
+
+            <div class="mockup-status">
+              <span class="status-dot"></span>
+              <span data-i18n="mock.status">就绪 · Arduino CLI 1.5.1 · ESP32 3.3.10-cn · v0.1.0</span>
+            </div>
+          </div>
+          <div class="mockup-glow" aria-hidden="true"></div>
+          <div class="floating-badge"><span class="badge-dot"></span>ESP32-S2</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="page-shell">
+        <div class="section-head" data-reveal>
+          <p class="eyebrow" data-i18n="features.eyebrow">WHY WILD</p>
+          <h2 data-i18n-html="features.title">少一点工具，<br><span class="accent">多一点创造。</span></h2>
+          <p data-i18n="features.lede">每一个功能都围绕同一个目标：让你从打开程序到看到开发板运行，中间少几步。</p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card" data-reveal>
+            <span class="feature-index">01</span>
+            <h3 data-i18n="features.f1.title">单窗口工作流</h3>
+            <p data-i18n="features.f1.body">编辑器、串口监视器、编译输出在同一屏。拖动分隔线，把空间留给正在做的事。</p>
+          </article>
+          <article class="feature-card" data-reveal>
+            <span class="feature-index">02</span>
+            <h3 data-i18n="features.f2.title">ESP32 开箱即用</h3>
+            <p data-i18n="features.f2.body">一键下载 Arduino CLI，一键安装 ESP32 开发支持。安装完成后，完整板卡列表自动出现。</p>
+          </article>
+          <article class="feature-card" data-reveal>
+            <span class="feature-index">03</span>
+            <h3 data-i18n="features.f3.title">为中国网络设计</h3>
+            <p data-i18n="features.f3.body">默认使用 Espressif 中国镜像。CLI 走 Arduino 官方 CDN，ESP32 core 和工具链从 dl.espressif.cn 下载。</p>
+          </article>
+          <article class="feature-card" data-reveal>
+            <span class="feature-index">04</span>
+            <h3 data-i18n="features.f4.title">上传更可靠</h3>
+            <p data-i18n="features.f4.body">上传前释放串口，失败自动重试；针对原生 USB 开发板补充重连流程和中文提示。</p>
+          </article>
+          <article class="feature-card" data-reveal>
+            <span class="feature-index">05</span>
+            <h3 data-i18n="features.f5.title">顺手的串口监视器</h3>
+            <p data-i18n="features.f5.body">波特率切换、自动滚动、UTF-8 增量解码，中文不会被切成乱码；回车发送，自动追加 CRLF。</p>
+          </article>
+          <article class="feature-card" data-reveal>
+            <span class="feature-index">06</span>
+            <h3 data-i18n="features.f6.title">纯本地，无账号</h3>
+            <p data-i18n="features.f6.body">没有 AI、没有遥测、没有插件市场。代码、配置和串口数据都留在你的电脑上。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-tinted" id="start">
+      <div class="page-shell">
+        <div class="section-head" data-reveal>
+          <p class="eyebrow" data-i18n="start.eyebrow">QUICK START</p>
+          <h2 data-i18n-html="start.title">三步，<br><span class="accent">开始写代码。</span></h2>
+          <p data-i18n="start.lede">第一次启动需要联网安装工具链，之后就可以离线编辑。整个过程都有中文提示。</p>
+        </div>
+
+        <div class="steps">
+          <article class="step" data-reveal>
+            <span class="step-number">01</span>
+            <h3 data-i18n="start.s1.title">下载并运行</h3>
+            <p data-i18n="start.s1.body">解压后双击 wild-ide.exe。免安装；配置和草稿保存在 %APPDATA%\WildIDE。</p>
+          </article>
+          <article class="step" data-reveal>
+            <span class="step-number">02</span>
+            <h3 data-i18n="start.s2.title">安装 ESP32 支持</h3>
+            <p data-i18n="start.s2.body">按顶部提示下载 Arduino CLI，再安装 ESP32 开发支持。中国大陆网络默认使用镜像。</p>
+          </article>
+          <article class="step" data-reveal>
+            <span class="step-number">03</span>
+            <h3 data-i18n="start.s3.title">编译，然后上传</h3>
+            <p data-i18n="start.s3.body">选择开发板和串口。F7 编译，F8 编译并上传。打开串口查看开发板输出。</p>
+          </article>
+        </div>
+
+        <div class="shortcut-bar" data-reveal>
+          <span class="shortcut-label" data-i18n="start.shortcuts">快捷键</span>
+          <span class="shortcut"><kbd>F7</kbd><span data-i18n="start.k1">编译</span></span>
+          <span class="shortcut"><kbd>F8</kbd><span data-i18n="start.k2">上传</span></span>
+          <span class="shortcut"><kbd>Ctrl S</kbd><span data-i18n="start.k3">保存</span></span>
+          <span class="shortcut"><kbd>Ctrl O</kbd><span data-i18n="start.k4">打开</span></span>
+          <span class="shortcut"><kbd>Enter</kbd><span data-i18n="start.k5">发送</span></span>
+        </div>
+        <p class="start-note" data-i18n="start.note">还没有安装 ESP32 支持时，开发板下拉框只显示提示；安装完成后会自动读取完整板卡列表。</p>
+      </div>
+    </section>
+
+    <section class="section philosophy page-shell" id="philosophy">
+      <div class="philosophy-intro" data-reveal>
+        <p class="eyebrow" data-i18n="philosophy.eyebrow">PHILOSOPHY</p>
+        <h2 data-i18n-html="philosophy.title">工具应该<br><span class="accent">退到工作流后面。</span></h2>
+        <p class="philosophy-quote" data-i18n="philosophy.quote">“一个顺手的工具，应该让你忘记它的存在。”</p>
+      </div>
+
+      <div class="philosophy-body" data-reveal>
+        <p data-i18n="philosophy.p1">Wild IDE 从一个很具体的挫败感开始：只想让一块 ESP32 闪个灯，却要先穿过项目树、插件、配置和一堆不认识的概念。</p>
+        <p data-i18n="philosophy.p2">所以我们把界面压到最少：一个编辑器、一个串口、一个输出面板。没有 AI 补全，没有账号，没有插件市场。不是反对这些功能，而是这个工具不需要它们。</p>
+        <p data-i18n="philosophy.p3">它首先为中文用户和中国大陆网络设计。默认镜像、明确的中文提示、能复现的上传流程，比多十个功能更重要。</p>
+
+        <div class="principles">
+          <div class="principle">
+            <h3 data-i18n="philosophy.pr1.title">少即是多</h3>
+            <p data-i18n="philosophy.pr1.body">每个界面元素都要证明自己值得占据空间。</p>
+          </div>
+          <div class="principle">
+            <h3 data-i18n="philosophy.pr2.title">本地优先</h3>
+            <p data-i18n="philosophy.pr2.body">代码、配置、串口数据都不离开你的电脑。</p>
+          </div>
+          <div class="principle">
+            <h3 data-i18n="philosophy.pr3.title">默认正确</h3>
+            <p data-i18n="philosophy.pr3.body">为中国网络、原生 USB 板和真实失败路径做默认处理。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="history">
+      <div class="page-shell">
+        <div class="section-head" data-reveal>
+          <p class="eyebrow" data-i18n="history.eyebrow">PROJECT NOTES</p>
+          <h2 data-i18n-html="history.title">一条还很短的<br><span class="accent">时间线。</span></h2>
+          <p data-i18n="history.lede">Wild IDE 是一个很新的项目。这里记录的不是版本号，而是几次关键的取舍。</p>
+        </div>
+
+        <div class="timeline">
+          <article class="timeline-item" data-reveal>
+            <div class="timeline-date" data-i18n="history.t1.date">2026.10.20</div>
+            <div class="timeline-marker" aria-hidden="true"></div>
+            <div class="timeline-content">
+              <h3 data-i18n="history.t1.title">起点</h3>
+              <p data-i18n="history.t1.body">第一个 commit。目标很简单：做一个打开就能写 ESP32 的桌面工具。</p>
+            </div>
+          </article>
+          <article class="timeline-item" data-reveal>
+            <div class="timeline-date" data-i18n="history.t2.date">2026.10.21</div>
+            <div class="timeline-marker" aria-hidden="true"></div>
+            <div class="timeline-content">
+              <h3 data-i18n="history.t2.title">第一版</h3>
+              <p data-i18n="history.t2.body">单窗口编辑器、C++ 高亮、串口监视器、编译输出和可拖动面板。</p>
+            </div>
+          </article>
+          <article class="timeline-item" data-reveal>
+            <div class="timeline-date" data-i18n="history.t3.date">2026.10.21</div>
+            <div class="timeline-marker" aria-hidden="true"></div>
+            <div class="timeline-content">
+              <h3 data-i18n="history.t3.title">为中国网络补课</h3>
+              <p data-i18n="history.t3.body">Arduino CLI 优先官方 CDN；ESP32 安装读取 Jihulab 中国索引，并显式使用 -cn 版本。</p>
+            </div>
+          </article>
+          <article class="timeline-item" data-reveal>
+            <div class="timeline-date" data-i18n="history.t4.date">2026.10.21</div>
+            <div class="timeline-marker" aria-hidden="true"></div>
+            <div class="timeline-content">
+              <h3 data-i18n="history.t4.title">把上传做稳</h3>
+              <p data-i18n="history.t4.body">编译与上传拆开，上传前释放串口，失败自动重试；补上原生 USB 开发板的重连提示。</p>
+            </div>
+          </article>
+          <article class="timeline-item" data-reveal>
+            <div class="timeline-date" data-i18n="history.t5.date">现在</div>
+            <div class="timeline-marker" aria-hidden="true"></div>
+            <div class="timeline-content">
+              <h3 data-i18n="history.t5.title">0.1.0 早期测试版</h3>
+              <p data-i18n="history.t5.body">第一个面向早期用户的 Windows 测试包。下一步是收集真实开发板上的反馈。</p>
+            </div>
+          </article>
+        </div>
+        <p class="timeline-note" data-i18n="history.note">时间线来自 git 提交记录和项目笔记；没有把未发生的计划写成历史。</p>
+      </div>
+    </section>
+
+    <section class="download-section page-shell" id="download">
+      <div class="download-card" data-reveal>
+        <div class="download-copy">
+          <p class="eyebrow" data-i18n="download.eyebrow">DOWNLOAD</p>
+          <h2 data-i18n-html="download.title">下载 <span class="accent-dark">Windows 测试版</span></h2>
+          <p class="download-lede" data-i18n="download.lede">Windows 10 / 11 64 位免安装测试包。macOS / Linux 版本尚未提供。</p>
+          <a class="button button-dark" href="https://gitee.com/fablabswjtu/wildcode/releases" target="_blank" rel="noopener">
+            <span data-i18n="download.button">前往 Gitee 下载</span>
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M8 2v8m0 0 3-3m-3 3L5 7M3 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <div class="download-meta">
+            <span>2.7 MB</span>
+            <span>Windows x64</span>
+            <span data-i18n="download.unsigned">未签名测试版</span>
+          </div>
+        </div>
+
+        <div class="download-info">
+          <div class="info-row">
+            <span data-i18n="download.file">文件</span>
+            <code>WildIDE-0.1.0-test1-win64.zip</code>
+          </div>
+          <div class="info-row info-row-sha">
+            <span data-i18n="download.sha">SHA256</span>
+            <code class="sha">FCB5228333A8A4CC5D1973A050E7F16380DD727BC36E2C94DF411B1877F63D99</code>
+          </div>
+          <button class="copy-button" type="button" data-copy="FCB5228333A8A4CC5D1973A050E7F16380DD727BC36E2C94DF411B1877F63D99" aria-live="polite">
+            <span data-i18n="download.copy">复制</span>
+          </button>
+          <p class="download-warning" data-i18n="download.warning">测试版没有代码签名，Windows SmartScreen 可能提示风险。选择「更多信息」→「仍要运行」。</p>
+          <a class="text-link" href="https://gitee.com/fablabswjtu/wildcode/releases" target="_blank" rel="noopener" data-i18n="download.checksum">在 Gitee 查看发布页</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section faq" id="faq">
+      <div class="page-shell">
+        <div class="section-head" data-reveal>
+          <p class="eyebrow" data-i18n="faq.eyebrow">BEFORE YOU GO</p>
+          <h2 data-i18n="faq.title">几个常见问题。</h2>
+        </div>
+
+        <div class="faq-grid" data-reveal>
+          <details>
+            <summary data-i18n="faq.q1">为什么目前只有 Windows？</summary>
+            <p data-i18n="faq.a1">第一个测试包只构建了 Windows x64。Wild IDE 使用 Rust + egui，本身可以跨平台；是否提供 macOS / Linux 版本，取决于早期反馈。</p>
+          </details>
+          <details>
+            <summary data-i18n="faq.q2">为什么只支持 ESP32？</summary>
+            <p data-i18n="faq.a2">当前版本专注 ESP32 Arduino 体系。内部保留了通用 FQBN 处理，但还没有为其他平台准备板卡列表。</p>
+          </details>
+          <details>
+            <summary data-i18n="faq.q3">上传失败怎么办？</summary>
+            <p data-i18n="faq.a3">先关闭其他串口工具和 Wild IDE 的串口，拔插开发板；原生 USB 板可以按一下 RST。仍失败时按住 BOOT 再点上传，看到 Connecting... 后松开。</p>
+          </details>
+          <details>
+            <summary data-i18n="faq.q4">以后会加入 AI 吗？</summary>
+            <p data-i18n="faq.a4">不会。Wild IDE 的目标是简单、本地、可预测。没有账号、没有遥测，也没有插件市场。</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="page-shell footer-inner">
+      <div class="footer-brand">
+        <img src="assets/favicon.svg" width="22" height="22" alt="">
+        <span>Wild IDE · 野IDE</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://gitee.com/fablabswjtu/wildcode" target="_blank" rel="noopener">Gitee</a>
+        <a href="#" id="github-link" hidden data-i18n="footer.github">GitHub</a>
+        <a href="https://gitee.com/fablabswjtu/wildcode/blob/master/README.md" target="_blank" rel="noopener" data-i18n="footer.docs">文档</a>
+        <a href="https://gitee.com/fablabswjtu/wildcode/blob/master/LICENSE" target="_blank" rel="noopener">MIT License</a>
+        <a href="#main" data-i18n="footer.top">回到顶部</a>
+      </div>
+      <p class="footer-fine" data-i18n="footer.fine">© 2026 Wild IDE contributors. 本地优先，没有 AI，没有账号。</p>
+    </div>
+  </footer>
+</body>
+</html>

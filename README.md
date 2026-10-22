@@ -21,7 +21,7 @@
 
 ### 1. 获取程序
 
-从 Release 下载，或从源码构建（见下文）。Windows 上直接运行 `wild-ide.exe`。
+从 [Release](https://gitee.com/fablabswjtu/wildcode/releases) 下载，或从源码构建（见下文）。Windows 上直接运行 `wild-ide.exe`。
 
 ### 2. 首次准备（只需一次）
 
