@@ -4,7 +4,7 @@ A tiny Arduino / ESP32 IDE written in Rust. No project tree, no plugin marketpla
 just open the app, open the serial port, write code, compile and upload. The layout feels like
 a serial debugging tool.
 
-[中文](README.md)
+[中文](README.md) · [GitHub](https://github.com/g7bb04/wildcode) · [Gitee](https://gitee.com/fablabswjtu/wildcode)
 
 ## Features
 

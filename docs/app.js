@@ -2,7 +2,7 @@
  * Wild IDE website
  * Set GITHUB_URL after the GitHub repository exists to show the footer link.
  */
-const GITHUB_URL = "";
+const GITHUB_URL = "https://github.com/g7bb04/wildcode";
 
 const I18N = {
   zh: {
