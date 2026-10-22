@@ -3,7 +3,7 @@
 一个用 Rust 写的极简 Arduino / ESP32 IDE。没有项目树、没有插件市场、没有 AI——
 打开软件、打开串口、写代码、编译上传，界面就像一个顺手的串口调试工具。
 
-[English](README.en.md) · [GitHub](https://github.com/g7bb04/wildcode) · [Gitee](https://gitee.com/fablabswjtu/wildcode)
+[官网](https://g7bb04.github.io/wildcode/) · [English](README.en.md) · [GitHub](https://github.com/g7bb04/wildcode) · [Gitee](https://gitee.com/fablabswjtu/wildcode)
 
 ## 特性
 
