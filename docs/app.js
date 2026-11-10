@@ -151,7 +151,7 @@ const I18N = {
     "hero.meta2": "Portable · about 2.7 MB",
     "hero.meta3": "MIT License",
 
-    "mock.openfile": "Open file",
+    "mock.openfile": "Open",
     "mock.save": "Save",
     "mock.saveas": "Save as",
     "mock.compile": "Compile",
