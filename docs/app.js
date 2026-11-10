@@ -25,6 +25,10 @@ const I18N = {
     "hero.meta2": "免安装 · 约 2.7 MB",
     "hero.meta3": "MIT License",
 
+    "mock.openfile": "打开文件",
+    "mock.save": "保存",
+    "mock.saveas": "另存为",
+    "mock.compile": "编译",
     "mock.open": "打开串口",
     "mock.upload": "上传",
     "mock.output": "编译输出",
@@ -147,6 +151,10 @@ const I18N = {
     "hero.meta2": "Portable · about 2.7 MB",
     "hero.meta3": "MIT License",
 
+    "mock.openfile": "Open file",
+    "mock.save": "Save",
+    "mock.saveas": "Save as",
+    "mock.compile": "Compile",
     "mock.open": "Open serial",
     "mock.upload": "Upload",
     "mock.output": "Build output",

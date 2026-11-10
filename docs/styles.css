@@ -494,7 +494,11 @@ button.button {
 }
 
 .mock-open {
-  margin-left: auto;
+  margin-left: 0;
+}
+
+.mock-spacer {
+  flex: 1;
 }
 
 .mock-tool-accent {
@@ -1407,6 +1411,10 @@ kbd {
   }
 
   .mock-pill {
+    display: none;
+  }
+
+  .mock-file-optional {
     display: none;
   }
 

@@ -66,9 +66,9 @@ A sample LED-blink sketch is created automatically on first run.
 
 | Area | Description |
 | --- | --- |
-| Toolbar | Board picker (available after ESP32 support is installed), port picker, serial toggle, compile, upload, settings |
+| Toolbar | Open / Save / Save As on the left; board and port pickers plus serial toggle, compile, upload and settings on the right |
 | Banner | Appears when Arduino CLI or ESP32 support is missing, with install actions |
-| Editor | `.ino` sketch with line numbers and highlighting; open / save / save as at top right |
+| Editor | `.ino` sketch with line numbers and highlighting; file name, save state and line count at the top |
 | Bottom panel | "Serial monitor" and "Build output" tabs; drag the top edge to resize |
 | Status bar | Current status, Arduino CLI version, ESP32 support state, app version |
 

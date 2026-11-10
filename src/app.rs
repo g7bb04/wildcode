@@ -1058,106 +1058,42 @@ impl WildApp {
         ui.horizontal(|ui| {
             ui.label(RichText::new(APP_NAME_ZH).size(22.0).strong().color(ACCENT));
             ui.label(RichText::new(APP_NAME).size(11.0).color(p.weak_text));
+            ui.add_space(6.0);
+            ui.separator();
             ui.add_space(4.0);
 
-            // Board picker: only populate it after esp32:esp32 is installed.
-            let boards_ready = self.core_installed && !self.boards.is_empty();
-            let board_text = if self.env_checking {
-                if self.core_installed {
-                    "正在加载开发板…"
-                } else {
-                    "正在检测 ESP32 支持…"
-                }
-            } else if !self.core_installed {
-                "安装 ESP32 支持后选择"
-            } else if boards_ready {
-                boards::board_name(&self.boards, &self.cfg.board)
-            } else {
-                "未找到开发板"
-            }
-            .to_owned();
-            let mut selected_board = None;
-            ui.add_enabled_ui(boards_ready, |ui| {
-                egui::ComboBox::from_id_salt("board_combo")
-                    .width(205.0)
-                    .selected_text(RichText::new(board_text).size(13.0))
-                    .show_ui(ui, |ui| {
-                        ScrollArea::vertical().max_height(380.0).show(ui, |ui| {
-                            for board in &self.boards {
-                                let selected = board.fqbn == self.cfg.board;
-                                if ui
-                                    .selectable_label(selected, &board.name)
-                                    .on_hover_text(&board.fqbn)
-                                    .clicked()
-                                {
-                                    selected_board = Some(board.fqbn.clone());
-                                    ui.close_menu();
-                                }
-                            }
-                        });
-                    })
-                    .response
-                    .on_hover_text(if boards_ready {
-                        "开发板"
-                    } else {
-                        "安装 ESP32 开发支持后可用"
-                    });
-            });
+            // File operations live at the top left, next to the app name.
             if ui
                 .add_enabled(
-                    boards_ready,
-                    Button::new(RichText::new("↻")).min_size(egui::vec2(26.0, 26.0)),
+                    self.runner.is_none(),
+                    Button::new(RichText::new("打开文件").size(12.5))
+                        .min_size(egui::vec2(64.0, 26.0)),
                 )
-                .on_hover_text(if boards_ready {
-                    "刷新开发板列表"
-                } else {
-                    "安装 ESP32 开发支持后可用"
-                })
+                .on_hover_text("打开 .ino 文件 (Ctrl+O)")
                 .clicked()
             {
-                *action = Action::RefreshBoards;
+                *action = Action::Open;
             }
-            if let Some(fqbn) = selected_board {
-                self.cfg.board = fqbn;
-                self.config_dirty = true;
-            }
-
-            // Port picker
-            let port_text = if self.cfg.port.is_empty() {
-                "选择串口".to_owned()
-            } else {
-                self.cfg.port.clone()
-            };
-            let mut selected_port = None;
-            egui::ComboBox::from_id_salt("port_combo")
-                .width(100.0)
-                .selected_text(RichText::new(port_text).size(13.0))
-                .show_ui(ui, |ui| {
-                    if self.ports.is_empty() {
-                        ui.weak("未发现串口");
-                    }
-                    for port in &self.ports {
-                        if ui.selectable_label(*port == self.cfg.port, port).clicked() {
-                            selected_port = Some(port.clone());
-                            ui.close_menu();
-                        }
-                    }
-                })
-                .response
-                .on_hover_text("串口");
             if ui
-                .add(Button::new(RichText::new("↻")).min_size(egui::vec2(26.0, 26.0)))
-                .on_hover_text("刷新串口")
+                .add_enabled(
+                    self.runner.is_none(),
+                    Button::new(RichText::new("保存").size(12.5)).min_size(egui::vec2(48.0, 26.0)),
+                )
+                .on_hover_text("保存到当前 .ino 文件 (Ctrl+S)")
                 .clicked()
             {
-                *action = Action::RefreshPorts;
+                *action = Action::Save;
             }
-            if let Some(port) = selected_port {
-                if port != self.cfg.port {
-                    self.cfg.port = port;
-                    self.config_dirty = true;
-                    self.reconnect_serial_if_open();
-                }
+            if ui
+                .add_enabled(
+                    self.runner.is_none(),
+                    Button::new(RichText::new("另存为").size(12.5))
+                        .min_size(egui::vec2(56.0, 26.0)),
+                )
+                .on_hover_text("另存为新的 .ino 文件 (Ctrl+Shift+S)")
+                .clicked()
+            {
+                *action = Action::SaveAs;
             }
 
             ui.add_space(8.0);
@@ -1251,6 +1187,105 @@ impl WildApp {
                     .clicked()
                 {
                     *action = Action::ToggleSerial;
+                }
+
+                // Port picker and board picker share this right-hand group.
+                if ui
+                    .add(Button::new(RichText::new("↻")).min_size(egui::vec2(26.0, 26.0)))
+                    .on_hover_text("刷新串口")
+                    .clicked()
+                {
+                    *action = Action::RefreshPorts;
+                }
+                let port_text = if self.cfg.port.is_empty() {
+                    "选择串口".to_owned()
+                } else {
+                    self.cfg.port.clone()
+                };
+                let mut selected_port = None;
+                egui::ComboBox::from_id_salt("port_combo")
+                    .width(92.0)
+                    .selected_text(RichText::new(port_text).size(13.0))
+                    .show_ui(ui, |ui| {
+                        if self.ports.is_empty() {
+                            ui.weak("未发现串口");
+                        }
+                        for port in &self.ports {
+                            if ui.selectable_label(*port == self.cfg.port, port).clicked() {
+                                selected_port = Some(port.clone());
+                                ui.close_menu();
+                            }
+                        }
+                    })
+                    .response
+                    .on_hover_text("串口");
+                if let Some(port) = selected_port {
+                    if port != self.cfg.port {
+                        self.cfg.port = port;
+                        self.config_dirty = true;
+                        self.reconnect_serial_if_open();
+                    }
+                }
+
+                let boards_ready = self.core_installed && !self.boards.is_empty();
+                if ui
+                    .add_enabled(
+                        boards_ready,
+                        Button::new(RichText::new("↻")).min_size(egui::vec2(26.0, 26.0)),
+                    )
+                    .on_hover_text(if boards_ready {
+                        "刷新开发板列表"
+                    } else {
+                        "安装 ESP32 开发支持后可用"
+                    })
+                    .clicked()
+                {
+                    *action = Action::RefreshBoards;
+                }
+                let board_text = if self.env_checking {
+                    if self.core_installed {
+                        "正在加载开发板…"
+                    } else {
+                        "正在检测 ESP32 支持…"
+                    }
+                } else if !self.core_installed {
+                    "安装 ESP32 支持后选择"
+                } else if boards_ready {
+                    boards::board_name(&self.boards, &self.cfg.board)
+                } else {
+                    "未找到开发板"
+                }
+                .to_owned();
+                let mut selected_board = None;
+                ui.add_enabled_ui(boards_ready, |ui| {
+                    egui::ComboBox::from_id_salt("board_combo")
+                        .width(190.0)
+                        .selected_text(RichText::new(board_text).size(13.0))
+                        .show_ui(ui, |ui| {
+                            ScrollArea::vertical().max_height(380.0).show(ui, |ui| {
+                                for board in &self.boards {
+                                    let selected = board.fqbn == self.cfg.board;
+                                    if ui
+                                        .selectable_label(selected, &board.name)
+                                        .on_hover_text(&board.fqbn)
+                                        .clicked()
+                                    {
+                                        selected_board = Some(board.fqbn.clone());
+                                        ui.close_menu();
+                                    }
+                                }
+                            });
+                        })
+                        .response
+                        .on_hover_text(if boards_ready {
+                            "开发板"
+                        } else {
+                            "安装 ESP32 开发支持后可用"
+                        });
+                });
+                if let Some(fqbn) = selected_board {
+                    self.cfg.board = fqbn;
+                    self.config_dirty = true;
                 }
             });
         });
@@ -1598,7 +1633,7 @@ impl WildApp {
         });
     }
 
-    fn editor_ui(&mut self, ui: &mut Ui, action: &mut Action) {
+    fn editor_ui(&mut self, ui: &mut Ui) {
         let p = palette(self.cfg.theme);
         let dirty = self.code != self.last_saved;
         ui.horizontal(|ui| {
@@ -1622,39 +1657,6 @@ impl WildApp {
             .on_hover_text(self.cfg.sketch.clone());
 
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                if ui
-                    .add_enabled(
-                        self.runner.is_none(),
-                        Button::new(RichText::new("保存").size(12.0))
-                            .min_size(egui::vec2(48.0, 24.0)),
-                    )
-                    .on_hover_text("保存到当前 .ino 文件 (Ctrl+S)")
-                    .clicked()
-                {
-                    *action = Action::Save;
-                }
-                if ui
-                    .add_enabled(
-                        self.runner.is_none(),
-                        Button::new(RichText::new("另存为").size(12.0))
-                            .min_size(egui::vec2(58.0, 24.0)),
-                    )
-                    .on_hover_text("另存为新的 .ino 文件 (Ctrl+Shift+S)")
-                    .clicked()
-                {
-                    *action = Action::SaveAs;
-                }
-                if ui
-                    .add_enabled(
-                        self.runner.is_none(),
-                        Button::new(RichText::new("打开文件").size(12.0))
-                            .min_size(egui::vec2(64.0, 24.0)),
-                    )
-                    .on_hover_text("打开 .ino 文件 (Ctrl+O)")
-                    .clicked()
-                {
-                    *action = Action::Open;
-                }
                 ui.label(
                     RichText::new(format!("{} 行", self.code.matches('\n').count() + 1))
                         .size(10.5)
@@ -1939,7 +1941,7 @@ impl eframe::App for WildApp {
                     .fill(p.panel_bg)
                     .inner_margin(Margin::symmetric(10.0, 8.0)),
             )
-            .show(ctx, |ui| self.editor_ui(ui, &mut action));
+            .show(ctx, |ui| self.editor_ui(ui));
 
         if self.show_settings {
             let mut open = self.show_settings;
