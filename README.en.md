@@ -21,6 +21,7 @@ a serial debugging tool.
 - **Serial monitor**: baud rate selection, incremental UTF-8 decoding (multi-byte characters
   never get split into garbage), auto-scroll, clear, and Enter-to-send with CRLF.
 - **Auto-save**: the sketch is saved about 1.2 seconds after you stop typing; settings persist too.
+- **File operations**: open an `.ino` file, save to the current file, or save as a new Arduino sketch folder.
 - **Dark / light themes** and adjustable editor font size.
 - **Local-only**: no account, no telemetry. Network is only needed to install the toolchain and
   to compile for ESP32.
@@ -67,7 +68,7 @@ A sample LED-blink sketch is created automatically on first run.
 | --- | --- |
 | Toolbar | Board picker (available after ESP32 support is installed), port picker, serial toggle, compile, upload, settings |
 | Banner | Appears when Arduino CLI or ESP32 support is missing, with install actions |
-| Editor | `.ino` sketch with line numbers and highlighting; open/save at top right |
+| Editor | `.ino` sketch with line numbers and highlighting; open / save / save as at top right |
 | Bottom panel | "Serial monitor" and "Build output" tabs; drag the top edge to resize |
 | Status bar | Current status, Arduino CLI version, ESP32 support state, app version |
 
@@ -77,7 +78,8 @@ A sample LED-blink sketch is created automatically on first run.
 | --- | --- |
 | `F7` | Compile |
 | `F8` | Compile and upload |
-| `Ctrl + S` | Save sketch (`Cmd + S` on macOS) |
+| `Ctrl + S` | Save to the current `.ino` file (`Cmd + S` on macOS) |
+| `Ctrl + Shift + S` | Save as a new `.ino` file (`Cmd + Shift + S` on macOS) |
 | `Ctrl + O` | Open an `.ino` file (`Cmd + O` on macOS) |
 | `Enter` | Send from the serial input (CRLF appended) |
 | `Esc` | Close the settings window |
@@ -89,7 +91,7 @@ On Windows everything lives under `%APPDATA%\WildIDE\`:
 | Path | Contents |
 | --- | --- |
 | `config.json` | Board, port, baud rate, font size, theme, CLI path, mirror switch |
-| `sketch\WildSketch\WildSketch.ino` | Default sketch (use Open to switch to another `.ino`) |
+| `sketch\WildSketch\WildSketch.ino` | Default sketch (use Open to switch to another `.ino`, or Save As to keep it in your own project folder) |
 | `tools\arduino-cli.exe` | Arduino CLI downloaded by the app |
 
 Arduino CLI manages its own core/toolchain data in its default data directory. Wild IDE does not

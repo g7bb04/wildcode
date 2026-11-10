@@ -13,6 +13,7 @@ use eframe::egui::{
     Stroke, TextEdit, TextWrapMode, Ui,
 };
 use std::fs;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::sync::Arc;
@@ -41,6 +42,7 @@ enum Action {
     RefreshBoards,
     Settings,
     Save,
+    SaveAs,
     Open,
     InstallCore,
     InstallCli,
@@ -462,6 +464,11 @@ impl WildApp {
         if ctx.input_mut(|input| input.consume_key(egui::Modifiers::NONE, egui::Key::F8)) {
             *action = Action::Upload;
         }
+        let mut save_as = ctrl;
+        save_as.shift = true;
+        if ctx.input_mut(|input| input.consume_key(save_as, egui::Key::S)) {
+            *action = Action::SaveAs;
+        }
         if ctx.input_mut(|input| input.consume_key(ctrl, egui::Key::S)) {
             *action = Action::Save;
         }
@@ -507,6 +514,7 @@ impl WildApp {
             Action::Save => {
                 self.save_sketch(true);
             }
+            Action::SaveAs => self.save_sketch_as(),
             Action::Open => self.open_sketch(),
             Action::InstallCore => self.start_core_install(),
             Action::InstallCli => self.start_cli_install(),
@@ -899,7 +907,10 @@ impl WildApp {
     // ----------------------------------------------------------------- files
 
     fn save_sketch(&mut self, announce: bool) -> bool {
-        let path = self.cfg.sketch_path();
+        self.save_sketch_to(self.cfg.sketch_path(), announce)
+    }
+
+    fn save_sketch_to(&mut self, path: PathBuf, announce: bool) -> bool {
         if let Some(parent) = path.parent() {
             if let Err(err) = fs::create_dir_all(parent) {
                 self.status_error(format!("创建目录失败: {err}"));
@@ -908,10 +919,15 @@ impl WildApp {
         }
         match fs::write(&path, &self.code) {
             Ok(()) => {
+                if self.cfg.sketch_path() != path {
+                    self.cfg.sketch = path.to_string_lossy().to_string();
+                    self.config_dirty = true;
+                }
                 self.last_saved = self.code.clone();
                 self.last_autosave = Instant::now();
                 if announce {
                     self.status_success(format!("已保存 {}", self.cfg.sketch_name()));
+                    self.push_log(format!("保存草稿：{}", path.display()), LogLevel::Info);
                 }
                 true
             }
@@ -926,6 +942,35 @@ impl WildApp {
         }
     }
 
+    fn save_sketch_as(&mut self) {
+        let mut dialog = rfd::FileDialog::new()
+            .add_filter("Arduino Sketch", &["ino"])
+            .set_file_name(self.cfg.sketch_name());
+        let sketch_dir = self.cfg.sketch_dir();
+        let default_dir = if sketch_folder_mismatch(&self.cfg.sketch_path()) {
+            sketch_dir.clone()
+        } else {
+            sketch_dir
+                .parent()
+                .map(Path::to_path_buf)
+                .unwrap_or(sketch_dir)
+        };
+        dialog = dialog.set_directory(default_dir);
+        let Some(path) = dialog.save_file() else {
+            return;
+        };
+        let Some(path) = normalize_ino_path(path) else {
+            self.status_error("请使用 .ino 扩展名");
+            return;
+        };
+        let path = save_as_target(path);
+        if self.save_sketch_to(path.clone(), false) {
+            self.status_success(format!("已另存为 {}", self.cfg.sketch_name()));
+            self.push_log(format!("另存为：{}", path.display()), LogLevel::Info);
+            self.warn_sketch_folder_mismatch(&path);
+        }
+    }
+
     fn open_sketch(&mut self) {
         let Some(path) = rfd::FileDialog::new()
             .add_filter("Arduino Sketch", &["ino"])
@@ -933,39 +978,36 @@ impl WildApp {
         else {
             return;
         };
-        if path.extension().and_then(|ext| ext.to_str()) != Some("ino") {
+        if !is_ino_path(&path) {
             self.status_error("请选择 .ino 文件");
+            return;
+        }
+        if !self.save_sketch(false) {
             return;
         }
         match fs::read_to_string(&path) {
             Ok(text) => {
-                self.save_sketch(false);
                 self.cfg.sketch = path.to_string_lossy().to_string();
                 self.code = text;
                 self.last_saved = self.code.clone();
+                self.last_autosave = Instant::now();
                 self.config_dirty = true;
                 self.status_success(format!("已打开 {}", self.cfg.sketch_name()));
                 self.push_log(format!("打开草稿：{}", path.display()), LogLevel::Info);
-
-                let stem = path
-                    .file_stem()
-                    .map(|name| name.to_string_lossy().to_string())
-                    .unwrap_or_default();
-                let folder = path
-                    .parent()
-                    .and_then(|parent| parent.file_name())
-                    .map(|name| name.to_string_lossy().to_string())
-                    .unwrap_or_default();
-                if !stem.is_empty() && !folder.is_empty() && stem != folder {
-                    self.push_log(
-                        "提示：Arduino 要求 .ino 文件名与所在文件夹同名，否则 Arduino CLI 可能拒绝编译。",
-                        LogLevel::Warn,
-                    );
-                }
+                self.warn_sketch_folder_mismatch(&path);
             }
             Err(err) => {
                 self.status_error(format!("无法打开文件: {err}"));
             }
+        }
+    }
+
+    fn warn_sketch_folder_mismatch(&mut self, path: &Path) {
+        if sketch_folder_mismatch(path) {
+            self.push_log(
+                "提示：Arduino 要求 .ino 文件名与所在文件夹同名。当前路径可能导致编译失败，建议把草稿保存到同名文件夹中。",
+                LogLevel::Warn,
+            );
         }
     }
 
@@ -1586,6 +1628,7 @@ impl WildApp {
                         Button::new(RichText::new("保存").size(12.0))
                             .min_size(egui::vec2(48.0, 24.0)),
                     )
+                    .on_hover_text("保存到当前 .ino 文件 (Ctrl+S)")
                     .clicked()
                 {
                     *action = Action::Save;
@@ -1593,10 +1636,21 @@ impl WildApp {
                 if ui
                     .add_enabled(
                         self.runner.is_none(),
-                        Button::new(RichText::new("打开").size(12.0))
-                            .min_size(egui::vec2(48.0, 24.0)),
+                        Button::new(RichText::new("另存为").size(12.0))
+                            .min_size(egui::vec2(58.0, 24.0)),
                     )
-                    .on_hover_text("打开 .ino 草稿 (Ctrl+O)")
+                    .on_hover_text("另存为新的 .ino 文件 (Ctrl+Shift+S)")
+                    .clicked()
+                {
+                    *action = Action::SaveAs;
+                }
+                if ui
+                    .add_enabled(
+                        self.runner.is_none(),
+                        Button::new(RichText::new("打开文件").size(12.0))
+                            .min_size(egui::vec2(64.0, 24.0)),
+                    )
+                    .on_hover_text("打开 .ino 文件 (Ctrl+O)")
                     .clicked()
                 {
                     *action = Action::Open;
@@ -1791,7 +1845,7 @@ impl WildApp {
         ui.separator();
         ui.label(RichText::new("快捷键").strong().color(p.text));
         ui.label(
-            RichText::new("F7 编译   F8 上传   Ctrl+S 保存   Ctrl+O 打开")
+            RichText::new("F7 编译   F8 上传\nCtrl+S 保存   Ctrl+Shift+S 另存为   Ctrl+O 打开")
                 .size(11.5)
                 .color(p.weak_text),
         );
@@ -1976,6 +2030,59 @@ fn natural_port_cmp(a: &str, b: &str) -> std::cmp::Ordering {
     ap.cmp(bp).then(an.cmp(&bn)).then(asuffix.cmp(bsuffix))
 }
 
+fn is_ino_path(path: &Path) -> bool {
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .map(|ext| ext.eq_ignore_ascii_case("ino"))
+        .unwrap_or(false)
+}
+
+/// Add the Arduino extension when the save dialog omitted it, and reject
+/// unrelated extensions so the editor never silently saves a `.txt` as a sketch.
+fn normalize_ino_path(mut path: PathBuf) -> Option<PathBuf> {
+    match path.extension().and_then(|ext| ext.to_str()) {
+        None => {
+            path.set_extension("ino");
+            Some(path)
+        }
+        Some(ext) if ext.eq_ignore_ascii_case("ino") => {
+            if ext != "ino" {
+                path.set_extension("ino");
+            }
+            Some(path)
+        }
+        Some(_) => None,
+    }
+}
+
+fn sketch_folder_mismatch(path: &Path) -> bool {
+    let stem = path
+        .file_stem()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default();
+    let folder = path
+        .parent()
+        .and_then(|parent| parent.file_name())
+        .and_then(|name| name.to_str())
+        .unwrap_or_default();
+    !stem.is_empty() && !folder.is_empty() && !stem.eq_ignore_ascii_case(folder)
+}
+
+/// A new Save As target gets its own Arduino sketch folder. Existing files
+/// are left exactly where the user put them.
+fn save_as_target(path: PathBuf) -> PathBuf {
+    if path.exists() || !sketch_folder_mismatch(&path) {
+        return path;
+    }
+    let Some(stem) = path.file_stem().and_then(|name| name.to_str()) else {
+        return path;
+    };
+    let Some(parent) = path.parent() else {
+        return path;
+    };
+    parent.join(stem).join(format!("{stem}.ino"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2005,5 +2112,39 @@ mod tests {
             "(Cannot configure port, something went wrong. Original message: PermissionError(13, 'A device attached to the system is not functioning.', None, 31))"
         ));
         assert!(!is_upload_port_error("Sketch uses 306036 bytes"));
+    }
+
+    #[test]
+    fn ino_paths_are_normalized() {
+        assert_eq!(
+            normalize_ino_path(PathBuf::from("Blink")),
+            Some(PathBuf::from("Blink.ino"))
+        );
+        let upper = normalize_ino_path(PathBuf::from("Blink.INO")).unwrap();
+        assert_eq!(upper.extension().and_then(|ext| ext.to_str()), Some("ino"));
+        assert!(normalize_ino_path(PathBuf::from("Blink.txt")).is_none());
+        assert!(is_ino_path(Path::new("Blink.ino")));
+        assert!(is_ino_path(Path::new("Blink.INO")));
+        assert!(!is_ino_path(Path::new("Blink.txt")));
+    }
+
+    #[test]
+    fn detects_sketch_folder_mismatch() {
+        assert!(!sketch_folder_mismatch(Path::new(
+            "C:/sketches/Blink/Blink.ino"
+        )));
+        assert!(sketch_folder_mismatch(Path::new("C:/sketches/Blink.ino")));
+    }
+
+    #[test]
+    fn save_as_creates_a_matching_folder() {
+        let base =
+            std::env::temp_dir().join(format!("wild-ide-save-as-test-{}", std::process::id()));
+        let source = base.join("Blink.ino");
+        let expected = base.join("Blink").join("Blink.ino");
+        assert_eq!(save_as_target(source), expected);
+
+        let valid = base.join("Blink").join("Blink.ino");
+        assert_eq!(save_as_target(valid.clone()), valid);
     }
 }
