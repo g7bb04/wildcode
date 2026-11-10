@@ -471,7 +471,7 @@ button.button {
 .mockup-toolbar {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   height: 42px;
   padding: 0 13px;
   background: #0d1215;
