@@ -43,10 +43,19 @@ impl SerialManager {
     pub fn open(&mut self, port_name: &str, baud: u32, tx: EventSender) -> Result<(), String> {
         self.close();
 
-        let port = serialport::new(port_name, baud)
+        let mut port = serialport::new(port_name, baud)
             .timeout(Duration::from_millis(60))
+            // Native USB CDC boards (ESP32-S2/S3 and most S2 mini boards) only
+            // consider the host connected after DTR is asserted. Without it the
+            // sketch's `Serial` output is silently discarded on the device.
+            .dtr_on_open(true)
             .open()
             .map_err(|err| format!("无法打开串口 {port_name}: {err}"))?;
+        // The Windows backend keeps the previous line state in some drivers,
+        // so assert DTR once more after the handle is open. RTS is kept low so
+        // classic auto-reset boards are not held in reset.
+        let _ = port.write_data_terminal_ready(true);
+        let _ = port.write_request_to_send(false);
         let mut reader = port
             .try_clone()
             .map_err(|err| format!("无法读取串口 {port_name}: {err}"))?;
