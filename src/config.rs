@@ -108,7 +108,7 @@ impl Config {
         let path = Self::config_path();
         let mut cfg = fs::read_to_string(&path)
             .ok()
-            .and_then(|text| serde_json::from_str::<Self>(&text).ok())
+            .and_then(|text| serde_json::from_str::<Self>(text.trim_start_matches('\u{feff}')).ok())
             .unwrap_or_default();
 
         if cfg.baud == 0 {
@@ -204,6 +204,14 @@ mod tests {
         let back: Config = serde_json::from_str(r#"{"board":"esp32:esp32:esp32"}"#).unwrap();
         assert!(back.use_china_mirror);
         assert_eq!(back.baud, 115_200);
+    }
+
+    #[test]
+    fn config_loader_tolerates_utf8_bom() {
+        let text = "\u{feff}{\"board\":\"esp32:esp32:lolin_s2_mini\"}";
+        let cfg: Config =
+            serde_json::from_str(text.trim_start_matches('\u{feff}')).expect("BOM-free JSON");
+        assert_eq!(cfg.board, "esp32:esp32:lolin_s2_mini");
     }
 
     #[test]

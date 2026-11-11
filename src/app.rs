@@ -99,6 +99,7 @@ pub struct WildApp {
     bottom_tab: BottomTab,
     logs: Vec<LogLine>,
     log_has_error: bool,
+    report: arduino::TaskReport,
     status: String,
     status_kind: StatusKind,
 
@@ -151,6 +152,7 @@ impl WildApp {
             bottom_tab: BottomTab::Output,
             logs: Vec::new(),
             log_has_error: false,
+            report: arduino::TaskReport::default(),
             status: "就绪".to_owned(),
             status_kind: StatusKind::Info,
             runner: None,
@@ -284,26 +286,72 @@ impl WildApp {
         }
         let runner = self.runner.take().unwrap();
         let kind = runner.kind;
-        let elapsed = runner.elapsed_seconds();
+        let elapsed = runner.elapsed_seconds_f64();
         self.focus_serial_at = None;
 
         match kind {
             TaskKind::Compile => {
                 if success {
-                    self.status_success(format!("编译成功（{elapsed}s）"));
-                    self.push_log(format!("✓ 编译成功，用时 {elapsed}s"), LogLevel::Success);
+                    let flash = self.report.flash;
+                    let ram = self.report.ram;
+                    let status = match flash {
+                        Some(memory) => format!(
+                            "编译成功（{elapsed:.1}s）· Flash {}% · RAM {}%",
+                            memory.percent(),
+                            ram.map(|value| value.percent()).unwrap_or(0)
+                        ),
+                        None => format!("编译成功（{elapsed:.1}s）"),
+                    };
+                    self.status_success(status);
+                    self.push_log(format!("✓ 编译成功，用时 {elapsed:.1}s"), LogLevel::Success);
+                    if let Some(memory) = flash {
+                        self.push_log(
+                            format!(
+                                "  Flash  {} / {} 字节 ({}%)",
+                                memory.used,
+                                memory.total,
+                                memory.percent()
+                            ),
+                            LogLevel::Info,
+                        );
+                    }
+                    if let Some(memory) = ram {
+                        self.push_log(
+                            format!(
+                                "  RAM    {} / {} 字节 ({}%)",
+                                memory.used,
+                                memory.total,
+                                memory.percent()
+                            ),
+                            LogLevel::Info,
+                        );
+                    }
+                    self.push_log(
+                        format!(
+                            "  诊断   警告 {} 条 · 错误 {} 条",
+                            self.report.warnings, self.report.errors
+                        ),
+                        if self.report.warnings > 0 {
+                            LogLevel::Warn
+                        } else {
+                            LogLevel::Info
+                        },
+                    );
                 } else if cancelled {
-                    self.status_info("编译已停止");
-                    self.push_log("编译已停止。", LogLevel::Warn);
+                    self.status_info(format!("编译已停止（{elapsed:.1}s）"));
+                    self.push_log(format!("编译已停止，用时 {elapsed:.1}s。"), LogLevel::Warn);
                 } else {
                     self.status_error("编译失败，请查看编译输出");
                     self.push_log(
                         format!(
-                            "✗ 编译失败{}",
+                            "✗ 编译失败{} · 用时 {elapsed:.1}s",
                             code.map(|c| format!("（退出码 {c}）")).unwrap_or_default()
                         ),
                         LogLevel::Error,
                     );
+                    if let Some(problem) = self.last_problem_line() {
+                        self.push_log(format!("  最后错误  {problem}"), LogLevel::Warn);
+                    }
                     self.bottom_tab = BottomTab::Output;
                 }
             }
@@ -313,12 +361,16 @@ impl WildApp {
                 }
                 self.serial_was_open = false;
                 if success {
-                    self.status_success(format!("上传成功（{elapsed}s）"));
-                    self.push_log(format!("✓ 上传成功，用时 {elapsed}s"), LogLevel::Success);
+                    self.status_success(format!("上传成功（{elapsed:.1}s）· {}", self.cfg.port));
+                    self.push_log(format!("✓ 上传成功，用时 {elapsed:.1}s"), LogLevel::Success);
+                    let summary = self.report.upload_summary();
+                    if !summary.is_empty() {
+                        self.push_log(format!("  {summary}"), LogLevel::Info);
+                    }
                     self.focus_serial_at = Some(Instant::now() + Duration::from_millis(900));
                 } else if cancelled {
-                    self.status_info("上传已停止");
-                    self.push_log("上传已停止。", LogLevel::Warn);
+                    self.status_info(format!("上传已停止（{elapsed:.1}s）"));
+                    self.push_log(format!("上传已停止，用时 {elapsed:.1}s。"), LogLevel::Warn);
                     self.bottom_tab = BottomTab::Output;
                 } else {
                     let recent: Vec<&LogLine> = self.logs.iter().rev().take(40).collect();
@@ -339,11 +391,14 @@ impl WildApp {
                     }
                     self.push_log(
                         format!(
-                            "✗ 上传失败{}",
+                            "✗ 上传失败{} · 用时 {elapsed:.1}s",
                             code.map(|c| format!("（退出码 {c}）")).unwrap_or_default()
                         ),
                         LogLevel::Error,
                     );
+                    if let Some(problem) = self.last_problem_line() {
+                        self.push_log(format!("  最后错误  {problem}"), LogLevel::Warn);
+                    }
                     self.bottom_tab = BottomTab::Output;
                 }
             }
@@ -587,9 +642,42 @@ impl WildApp {
         let id = self.begin_task(kind);
         self.bottom_tab = BottomTab::Output;
         self.status_busy(format!("正在{}…", kind.label()));
+
+        let board_name = boards::board_name(&self.boards, &self.cfg.board).to_owned();
+        let cli_version = self
+            .cli_version
+            .clone()
+            .unwrap_or_else(|| "未知版本".to_owned());
+        let mirror = if self.cfg.use_china_mirror {
+            "中国镜像"
+        } else {
+            "官方源"
+        };
         self.push_log(
             format!("▶ 开始{} · {}", kind.label(), self.cfg.sketch_name()),
             LogLevel::Command,
+        );
+        self.push_log(
+            format!("  开发板  {board_name}  ({})", self.cfg.board),
+            LogLevel::Info,
+        );
+        if upload {
+            self.push_log(
+                format!("  串口    {} @ {} baud", self.cfg.port, self.cfg.baud),
+                LogLevel::Info,
+            );
+        }
+        self.push_log(
+            format!("  草稿    {}", self.cfg.sketch_dir().display()),
+            LogLevel::Info,
+        );
+        self.push_log(
+            format!("  输出    {}", Config::build_dir().display()),
+            LogLevel::Info,
+        );
+        self.push_log(
+            format!("  环境    Arduino CLI {cli_version} · ESP32 支持 · {mirror}"),
+            LogLevel::Info,
         );
 
         let tx = self.tx.clone();
@@ -789,6 +877,7 @@ impl WildApp {
     fn begin_task(&mut self, kind: TaskKind) -> u64 {
         let id = self.next_task_id;
         self.next_task_id = self.next_task_id.wrapping_add(1);
+        self.report = arduino::TaskReport::default();
         self.runner = Some(Runner::new(id, kind, Arc::new(AtomicBool::new(false))));
         id
     }
@@ -1027,8 +1116,27 @@ impl WildApp {
     }
 
     fn push_output(&mut self, line: String) {
+        let kind = self.runner.as_ref().map(|runner| runner.kind);
+        if matches!(kind, Some(TaskKind::Compile | TaskKind::Upload)) {
+            self.report.observe(&line);
+        }
         let level = classify_log(&line);
         self.push_log(line, level);
+    }
+
+    fn last_problem_line(&self) -> Option<String> {
+        let mut fallback = None;
+        for line in self.logs.iter().rev() {
+            let text = line.text.trim();
+            if text.contains("A fatal error occurred") || text.contains("error:") {
+                return Some(text.to_owned());
+            }
+            if fallback.is_none() && (is_upload_port_error(text) || text.contains("无法打开串口"))
+            {
+                fallback = Some(text.to_owned());
+            }
+        }
+        fallback
     }
 
     fn status_info(&mut self, text: impl Into<String>) {
@@ -1584,15 +1692,24 @@ impl WildApp {
                     ui.add_space(2.0);
                     ui.horizontal(|ui| {
                         ui.add(egui::Spinner::new().size(12.0));
-                        ui.label(
-                            RichText::new(format!(
-                                "{}中… {}s",
-                                runner.kind.label(),
-                                runner.elapsed_seconds()
-                            ))
-                            .size(11.5)
-                            .color(p.weak_text),
+                        let mut detail = format!(
+                            "{}中… {:.1}s",
+                            runner.kind.label(),
+                            runner.elapsed_seconds_f64()
                         );
+                        if let Some(memory) = self.report.flash {
+                            detail.push_str(&format!(" · Flash {}%", memory.percent()));
+                        }
+                        if let Some(memory) = self.report.ram {
+                            detail.push_str(&format!(" · RAM {}%", memory.percent()));
+                        }
+                        if let Some(bytes) = self.report.wrote_bytes {
+                            detail.push_str(&format!(" · 已写入 {bytes} 字节"));
+                        }
+                        if let Some(speed) = self.report.speed_kbps {
+                            detail.push_str(&format!(" · {speed:.1} kbit/s"));
+                        }
+                        ui.label(RichText::new(detail).size(11.5).color(p.weak_text));
                     });
                 }
             });

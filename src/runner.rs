@@ -45,4 +45,8 @@ impl Runner {
     pub fn elapsed_seconds(&self) -> u64 {
         self.started.elapsed().as_secs()
     }
+
+    pub fn elapsed_seconds_f64(&self) -> f64 {
+        self.started.elapsed().as_secs_f64()
+    }
 }

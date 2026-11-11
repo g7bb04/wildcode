@@ -17,7 +17,9 @@ a serial debugging tool.
 - **Full board list**: after the core is installed, boards are read from
   `arduino-cli board listall`; a curated fallback list is shown before that.
 - **Compile and upload**: `F7` compiles, `F8` compiles and uploads. The serial port is released
-  before upload and reconnected automatically afterwards.
+  before upload and reconnected automatically afterwards. Output shows the board, port, sketch and
+  build paths, the exact command line, then a summary of Flash / RAM use, warning and error counts.
+  Uploads also report chip model, MAC, bytes written, speed, and verification.
 - **Serial monitor**: baud rate selection, incremental UTF-8 decoding (multi-byte characters
   never get split into garbage), auto-scroll, clear, and Enter-to-send with CRLF.
 - **Auto-save**: the sketch is saved about 1.2 seconds after you stop typing; settings persist too.
